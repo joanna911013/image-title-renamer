@@ -1,0 +1,63 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screenshot → Smart Filename (EN)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; max-width: 720px; margin: auto; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    button { padding: 10px 16px; border-radius: 8px; border: 1px solid #999; cursor: pointer; }
+    .muted { color: #666; font-size: 14px; }
+    input[type=file] { margin: 8px 0; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>📸 Screenshot → Smart Filename</h1>
+  <p class="muted">Upload an image. The app runs OCR → (optional) LLM → generates an English filename with a timestamp (YYYY-MM-DD_HH-mm) and saves it.</p>
+
+  <form id="form" class="card">
+    <input type="file" id="file" name="image" accept="image/*" required />
+    <div style="margin-top: 12px">
+      <button type="submit">Generate filename</button>
+    </div>
+  </form>
+
+  <div id="result" class="card" style="display:none"></div>
+
+  <script>
+    const form = document.getElementById("form");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("file");
+      if (!fileInput.files.length) return;
+      const fd = new FormData();
+      fd.append("image", fileInput.files[0]);
+
+      result.style.display = "block";
+      result.innerHTML = "Processing...";
+      try {
+        const resp = await fetch("/api/rename", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        result.innerHTML = `
+          <h3>✅ Filename</h3>
+          <p><code>${data.suggestedName}</code></p>
+          <p class="muted">Timestamp: <b>${data.timestamp}</b> (${data.timezone})</p>
+          <p class="muted">Saved at: <code>${data.savedAt}</code></p>
+          <details>
+            <summary>OCR Preview</summary>
+            <pre>${(data.ocrPreview || "").replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+          </details>
+        `;
+      } catch (err) {
+        result.innerHTML = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
