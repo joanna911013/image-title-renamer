@@ -2,7 +2,7 @@
 # Screenshot → Smart Filename (English)
 
 Generate meaningful **English** filenames for screenshots/images:
-- OCR: **Azure AI Vision Read** (default) with **Google Vision** fallback
+- OCR: **Azure AI Vision Read**, **Google Vision**, or local **Tesseract** (default Azure)
 - (Optional) LLM (OpenAI) to produce concise English keywords
 - Timestamp format in filenames: **YYYY-MM-DD_HH-mm**
 - Optional **PII masking** before passing text to LLM and returning previews
@@ -13,9 +13,10 @@ npm i
 cp .env.example .env
 
 # Edit .env:
-# OCR_PROVIDER=azure | google
+# OCR_PROVIDER=azure | google | tesseract
 # Azure: AZURE_VISION_ENDPOINT / AZURE_VISION_KEY
 # Google: GOOGLE_APPLICATION_CREDENTIALS=/abs/path/to/service-account.json
+# Tesseract: no API keys needed, requires local `tesseract-ocr` binary
 # OpenAI (optional): OPENAI_API_KEY=sk-...
 # PII_MASK=true|false (default false)
 # PII_MASK_LEVEL=basic|strict

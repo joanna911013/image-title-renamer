@@ -11,10 +11,11 @@
     "start": "NODE_ENV=production node server/index.js"
   },
   "dependencies": {
+    "@google-cloud/vision": "^4.3.3",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
-    "@google-cloud/vision": "^4.3.3",
-    "openai": "^4.52.0",
-    "dotenv": "^16.4.5"
+    "node-tesseract-ocr": "^2.2.1",
+    "openai": "^4.52.0"
   }
 }

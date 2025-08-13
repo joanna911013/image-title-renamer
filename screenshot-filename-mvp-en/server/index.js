@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import vision from "@google-cloud/vision";
 import OpenAI from "openai";
+import tesseract from "node-tesseract-ocr";
 
 dotenv.config();
 
@@ -111,6 +112,21 @@ async function googleVisionOCR(filePath) {
   return (fullText || "").trim();
 }
 
+// Local Tesseract OCR helper
+async function tesseractOCR(filePath) {
+  try {
+    const text = await tesseract.recognize(filePath, {
+      lang: "eng",
+      oem: 1,
+      psm: 3,
+    });
+    return (text || "").trim();
+  } catch (e) {
+    console.error("Tesseract error:", e.message);
+    return "";
+  }
+}
+
 // Timestamp helper: YYYY-MM-DD_HH-mm (local or UTC)
 function buildTimestamp() {
   const d = USE_UTC ? new Date(new Date().toUTCString()) : new Date();
@@ -135,14 +151,36 @@ app.post("/api/rename", upload.single("image"), async (req, res) => {
         fullText = await azureReadOCR(filePath);
       } catch (e) {
         console.warn("Azure OCR failed, falling back to Google:", e.message);
-        fullText = await googleVisionOCR(filePath);
+        try {
+          fullText = await googleVisionOCR(filePath);
+        } catch (e2) {
+          console.warn("Google OCR failed, falling back to Tesseract:", e2.message);
+          fullText = await tesseractOCR(filePath);
+        }
       }
-    } else {
+    } else if (OCR_PROVIDER === "google") {
       try {
         fullText = await googleVisionOCR(filePath);
       } catch (e) {
-        console.warn("Google OCR failed, try Azure as fallback:", e.message);
-        fullText = await azureReadOCR(filePath);
+        console.warn("Google OCR failed, try Azure:", e.message);
+        try {
+          fullText = await azureReadOCR(filePath);
+        } catch (e2) {
+          console.warn("Azure OCR failed, falling back to Tesseract:", e2.message);
+          fullText = await tesseractOCR(filePath);
+        }
+      }
+    } else {
+      try {
+        fullText = await tesseractOCR(filePath);
+      } catch (e) {
+        console.warn("Tesseract OCR failed, falling back to Azure:", e.message);
+        try {
+          fullText = await azureReadOCR(filePath);
+        } catch (e2) {
+          console.warn("Azure OCR failed, falling back to Google:", e2.message);
+          fullText = await googleVisionOCR(filePath);
+        }
       }
     }
 
