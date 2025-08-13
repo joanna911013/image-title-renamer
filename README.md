@@ -1,17 +1,50 @@
 
-# Screenshot → Smart Filename (MVP, Azure OCR + PII Masking)
+# Screenshot → Smart Filename (English)
 
-Azure AI Vision Read(기본) + Google Vision(폴백)로 텍스트를 추출하고,
-(선택) OpenAI로 키워드를 생성해 의미 있는 파일명으로 저장합니다.
-PII 마스킹 옵션으로 이메일/전화 등을 치환합니다.
+Generate meaningful **English** filenames for screenshots/images:
+- OCR: **Azure AI Vision Read** (default) with **Google Vision** fallback
+- (Optional) LLM (OpenAI) to produce concise English keywords
+- Timestamp format in filenames: **YYYY-MM-DD_HH-mm**
+- Optional **PII masking** before passing text to LLM and returning previews
 
-## 시작
+## Quick Start
 ```bash
 npm i
 cp .env.example .env
+
+# Edit .env:
 # OCR_PROVIDER=azure | google
-# AZURE_VISION_ENDPOINT / AZURE_VISION_KEY 설정
-# (옵션) GOOGLE_APPLICATION_CREDENTIALS, OPENAI_API_KEY, PII_MASK=true
+# Azure: AZURE_VISION_ENDPOINT / AZURE_VISION_KEY
+# Google: GOOGLE_APPLICATION_CREDENTIALS=/abs/path/to/service-account.json
+# OpenAI (optional): OPENAI_API_KEY=sk-...
+# PII_MASK=true|false (default false)
+# PII_MASK_LEVEL=basic|strict
+# TIMEZONE=UTC|local  (default local)
+
 npm run dev
-open http://localhost:3000
+# Open http://localhost:3000
 ```
+
+## Filename Rules
+- Core is English-only (LLM prompt enforces English words/underscores).
+- Sanitization removes `:?*/\|"<>.` and collapses multiple underscores.
+- Final pattern: `<core>_YYYY-MM-DD_HH-mm.<ext>`
+- Timestamp uses **local time** by default; set `TIMEZONE=UTC` to switch.
+
+## API
+- `POST /api/rename` with `multipart/form-data` file field `image`
+- Response JSON:
+```json
+{
+  "suggestedName": "meeting_notes_2025-08-13_22-35.png",
+  "timestamp": "2025-08-13_22-35",
+  "timezone": "local",
+  "ocrProvider": "azure",
+  "ocrPreview": "...",
+  "savedAt": "out/meeting_notes_2025-08-13_22-35.png"
+}
+```
+
+## Notes
+- If OpenAI key is missing, a heuristic fallback uses the first text line; non-ASCII fallback becomes `screenshot`.
+- For production, consider serverless deployment (AWS Lambda/API Gateway or Cloud Run) and S3 for persistent storage.
