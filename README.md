@@ -1,7 +1,7 @@
 
-# Screenshot → Smart Filename (English)
+# Screenshot → Smart Filename 
 
-Generate meaningful **English** filenames for screenshots/images:
+Generate meaningful filenames for screenshots/images:
 - OCR: **Azure AI Vision Read** (default) with **Google Vision** fallback
 - (Optional) LLM (OpenAI) to produce concise English keywords
 - Timestamp format in filenames: **YYYY-MM-DD_HH-mm**
