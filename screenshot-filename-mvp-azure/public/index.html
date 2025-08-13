@@ -1,0 +1,63 @@
+
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screenshot → Filename MVP (Azure OCR)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; max-width: 720px; margin: auto; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    button { padding: 10px 16px; border-radius: 8px; border: 1px solid #999; cursor: pointer; }
+    .muted { color: #666; font-size: 14px; }
+    input[type=file] { margin: 8px 0; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>📸 Screenshot → Smart Filename</h1>
+  <p class="muted">Azure Read OCR(기본) → Google Vision(대체) → (선택) LLM 요약 + PII 마스킹</p>
+
+  <form id="form" class="card">
+    <input type="file" id="file" name="image" accept="image/*" required />
+    <div style="margin-top: 12px">
+      <button type="submit">파일명 생성</button>
+    </div>
+  </form>
+
+  <div id="result" class="card" style="display:none"></div>
+
+  <script>
+    const form = document.getElementById("form");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("file");
+      if (!fileInput.files.length) return;
+      const fd = new FormData();
+      fd.append("image", fileInput.files[0]);
+
+      result.style.display = "block";
+      result.innerHTML = "처리 중...";
+      try {
+        const resp = await fetch("/api/rename", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        result.innerHTML = `
+          <h3>✅ 생성된 파일명</h3>
+          <p><code>${data.suggestedName}</code></p>
+          <p class="muted">OCR: <b>${data.ocrProvider}</b></p>
+          <p class="muted">저장 위치: <code>${data.savedAt}</code></p>
+          <details>
+            <summary>OCR 미리보기</summary>
+            <pre>${(data.ocrPreview || "").replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</pre>
+          </details>
+        `;
+      } catch (err) {
+        result.innerHTML = "에러: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
